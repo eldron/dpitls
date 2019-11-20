@@ -124,6 +124,7 @@ class TLSRecordLayer(object):
         self._defragmenter.add_static_size(ContentType.change_cipher_spec, 1)
         self._defragmenter.add_static_size(ContentType.alert, 2)
         self._defragmenter.add_dynamic_size(ContentType.handshake, 1, 3)
+        self._defragmenter.add_dynamic_size(ContentType.middlebox_handshake, 1, 3)
         self.clearReadBuffer()
         self.clearWriteBuffer()
 
@@ -886,6 +887,17 @@ class TLSRecordLayer(object):
                 yield Alert().parse(p)
             elif recordHeader.type == ContentType.application_data:
                 yield ApplicationData().parse(p)
+            elif recordHeader.type == ContentType.middlebox_handshake:
+                print 'received middlebox_handshake msg'
+                if not isinstance(secondaryType, tuple):
+                    secondaryType = (secondaryType,)
+                subType = p.get(1)
+                if subType not in secondaryType:
+                    raise AssertionError()
+                if subType == HandshakeType.dist_ins_key:
+                    yield MiddleboxInsKey().parse(p)
+                else:
+                    raise AssertionError()
             elif recordHeader.type == ContentType.handshake:
                 #Convert secondaryType to tuple, if it isn't already
                 if not isinstance(secondaryType, tuple):
@@ -975,6 +987,8 @@ class TLSRecordLayer(object):
                 if ret is None:
                     break
                 header = RecordHeader3().create(self.version, ret[0], 0)
+                if ret[0] == ContentType.middlebox_handshake:
+                    print '_getNextRecord: got middlebox_handshake'
                 yield header, Parser(ret[1])
 
             # CCS can be sent before early_data but processing it will
@@ -990,6 +1004,7 @@ class TLSRecordLayer(object):
 
             header, parser = result
 
+            print '_getNextRecord: header.type = ' + str(header.type)
             # application data (and CCS in TLS1.3) isn't made out of messages,
             # pass it through
             if header.type == ContentType.application_data or \

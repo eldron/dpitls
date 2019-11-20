@@ -283,7 +283,7 @@ class HandshakeSettings(object):
         # public_key = cert_chain.getEndEntityPublicKey()
         # public_key.encrypt(data)
         # private_key.decrypt(data)
-        self.middlebox_pub_key = None
+        self.middlebox_public_key = None
 
     @staticmethod
     def _sanityCheckKeySizes(other):
@@ -506,7 +506,7 @@ class HandshakeSettings(object):
         other.versions = self.versions
 
         other.print_debug_info = self.print_debug_info
-        other.middlebox_pub_key = self.middlebox_pub_key
+        other.middlebox_public_key = self.middlebox_public_key
 
     def _copy_extension_settings(self, other):
         """Copy values of settings related to extensions."""

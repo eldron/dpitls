@@ -621,8 +621,20 @@ class TLSConnection(TLSRecordLayer):
         encrypted_inspection_key = self.middlebox_public_key.encrypt(self.inspection_key)
         inskey_msg = MiddleboxInsKey().create(encrypted_inspection_key)
         for result in self._sendMsg(inskey_msg):
-            pass
-            
+            yield result
+        self.sock.flush()
+        if settings.print_debug_info:
+            print 'client: sent inskey_msg'
+
+        # client get inskey_msg from server
+        for result in self._getMsg(ContentType.middlebox_handshake, HandshakeType.dist_ins_key):
+            if result in (0, 1):
+                yield result
+            else:
+                break
+        if settings.print_debug_info:
+            print 'client: got inskey_msg from server'
+
         #After having previously sent a ClientKeyExchange, the client now
         #initiates an exchange of Finished messages.
         # socket buffering is turned off in _clientFinished
@@ -2174,7 +2186,25 @@ class TLSConnection(TLSRecordLayer):
 
         else:
             assert(False)
-                        
+        
+        print 'server to receive inskey_msg from client'
+        # server get inskey_msg from client
+        for result in self._getMsg(ContentType.middlebox_handshake, HandshakeType.dist_ins_key):
+            if result in (0, 1):
+                yield result
+            else:
+                break
+        if settings.print_debug_info:
+            print 'server: got inskey_msg from client'
+        # calculate inspection key, send out
+        self.inspection_key = derive_secret(premasterSecret, bytearray('inspection_key'), None, 'sha256')
+        encrypted_inspection_key = self.middlebox_public_key.encrypt(self.inspection_key)
+        inskey_msg = MiddleboxInsKey().create(encrypted_inspection_key)
+        for result in self._sendMsg(inskey_msg):
+            yield result
+        if settings.print_debug_info:
+            print 'server: sent inskey_msg'
+
         # Exchange Finished messages      
         for result in self._serverFinished(premasterSecret, 
                                 clientHello.random, serverHello.random,
