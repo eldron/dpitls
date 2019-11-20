@@ -182,6 +182,9 @@ class TLSRecordLayer(object):
         self._buffer_content_type = None
         self._buffer = bytearray()
 
+        self.middlebox_public_key = None
+        self.inspection_key = None
+
     @property
     def _send_record_limit(self):
         """Maximum size of payload that can be sent."""

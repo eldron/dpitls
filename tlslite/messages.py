@@ -213,6 +213,28 @@ class Alert(object):
                                                           self.description)
 
 
+class MiddleboxHandshakeMsg(object):
+    def __init__(self, handshakeType):
+        self.contentType = ContentType.middlebox_handshake
+        self.handshakeType = handshakeType
+
+    def __eq__(self, other):
+        """Check if other object represents the same data as this object."""
+        if hasattr(self, "write") and hasattr(other, "write"):
+            return self.write() == other.write()
+        else:
+            return False
+
+    def __ne__(self, other):
+        """Check if other object represents different data as this object."""
+        return not self.__eq__(other)
+
+    def postWrite(self, w):
+        headerWriter = Writer()
+        headerWriter.add(self.handshakeType, 1)
+        headerWriter.add(len(w.bytes), 3)
+        return headerWriter.bytes + w.bytes
+
 class HandshakeMsg(object):
     def __init__(self, handshakeType):
         self.contentType = ContentType.handshake
@@ -235,6 +257,34 @@ class HandshakeMsg(object):
         headerWriter.add(len(w.bytes), 3)
         return headerWriter.bytes + w.bytes
 
+class MiddleboxInsKey(MiddleboxHandshakeMsg):
+    def __init__(self):
+        super(MiddleboxInsKey, self).__init__(HandshakeType.dist_ins_key)
+        #self.middlebox_id = None
+        self.encrypted_ins_key = None
+
+    # set handshake type in this function
+    # middlebox_id is of type unsigned long
+    def create(self, encrypted_ins_key):
+        #self.middlebox_id = middlebox_id
+        #self.handshakeType = handshake_type
+        self.encrypted_ins_key = encrypted_ins_key
+        return self
+
+    def parse(self, p):
+        p.startLengthCheck(3)
+        #self.handshakeType = p.get(2)
+        #self.middlebox_id = p.get(4)
+        self.encrypted_ins_key = p.getVarBytes(3)
+        p.stopLengthCheck()
+        return self
+
+    def write(self):
+        w = Writer()
+        #w.addTwo(self.handshakeType)
+        #w.addFour(self.middlebox_id)
+        w.add_var_bytes(self.encrypted_ins_key, 3)
+        return self.postWrite(w)
 
 class HelloMessage(HandshakeMsg):
     """

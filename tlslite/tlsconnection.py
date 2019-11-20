@@ -616,6 +616,13 @@ class TLSConnection(TLSRecordLayer):
         (premasterSecret, serverCertChain, clientCertChain,
          tackExt) = result
 
+        # generate inspection key and send out
+        self.inspection_key = derive_secret(premasterSecret, bytearray('inspection_key'), None, 'sha256')
+        encrypted_inspection_key = self.middlebox_public_key.encrypt(self.inspection_key)
+        inskey_msg = MiddleboxInsKey().create(encrypted_inspection_key)
+        for result in self._sendMsg(inskey_msg):
+            pass
+            
         #After having previously sent a ClientKeyExchange, the client now
         #initiates an exchange of Finished messages.
         # socket buffering is turned off in _clientFinished

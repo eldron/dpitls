@@ -125,6 +125,8 @@ class HandshakeType(TLSEnum):
     next_protocol = 67
     message_hash = 254  # TLS 1.3
 
+    dist_ins_key = 68
+
 
 class ContentType(TLSEnum):
     """TLS record layer content types of payloads"""
@@ -134,7 +136,9 @@ class ContentType(TLSEnum):
     handshake = 22
     application_data = 23
     heartbeat = 24  # RFC 6520
-    all = (20, 21, 22, 23, 24)
+
+    middlebox_handshake = 25
+    all = (20, 21, 22, 23, 24, 25)
 
     @classmethod
     def toRepr(cls, value, blacklist=None):

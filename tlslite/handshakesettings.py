@@ -277,6 +277,14 @@ class HandshakeSettings(object):
         self.keyExchangeNames = list(KEY_EXCHANGE_NAMES)
         self.cipherImplementations = list(CIPHER_IMPLEMENTATIONS)
 
+        self.print_debug_info = True
+        # s = open(private_key_file, "rb").read()
+        # cert_chain = X509CertChain([X509().parse(s)])
+        # public_key = cert_chain.getEndEntityPublicKey()
+        # public_key.encrypt(data)
+        # private_key.decrypt(data)
+        self.middlebox_pub_key = None
+
     @staticmethod
     def _sanityCheckKeySizes(other):
         """Check if key size limits are sane"""
@@ -496,6 +504,9 @@ class HandshakeSettings(object):
         other.minVersion = self.minVersion
         other.maxVersion = self.maxVersion
         other.versions = self.versions
+
+        other.print_debug_info = self.print_debug_info
+        other.middlebox_pub_key = self.middlebox_pub_key
 
     def _copy_extension_settings(self, other):
         """Copy values of settings related to extensions."""
