@@ -888,7 +888,7 @@ class TLSRecordLayer(object):
             elif recordHeader.type == ContentType.application_data:
                 yield ApplicationData().parse(p)
             elif recordHeader.type == ContentType.middlebox_handshake:
-                print 'received middlebox_handshake msg'
+                #print 'received middlebox_handshake msg'
                 if not isinstance(secondaryType, tuple):
                     secondaryType = (secondaryType,)
                 subType = p.get(1)
@@ -987,8 +987,8 @@ class TLSRecordLayer(object):
                 if ret is None:
                     break
                 header = RecordHeader3().create(self.version, ret[0], 0)
-                if ret[0] == ContentType.middlebox_handshake:
-                    print '_getNextRecord: got middlebox_handshake'
+                # if ret[0] == ContentType.middlebox_handshake:
+                #     print '_getNextRecord: got middlebox_handshake'
                 yield header, Parser(ret[1])
 
             # CCS can be sent before early_data but processing it will
@@ -1004,7 +1004,7 @@ class TLSRecordLayer(object):
 
             header, parser = result
 
-            print '_getNextRecord: header.type = ' + str(header.type)
+            #print '_getNextRecord: header.type = ' + str(header.type)
             # application data (and CCS in TLS1.3) isn't made out of messages,
             # pass it through
             if header.type == ContentType.application_data or \

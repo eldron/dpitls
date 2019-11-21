@@ -2263,6 +2263,27 @@ class CertificateStatus(HandshakeMsg):
         return self.postWrite(writer)
 
 
+class InspectionData(object):
+    def __init__(self):
+        self.contentType = ContentType.inspection_data
+        self.bytes = bytearray(0)
+
+    def create(self, bytes):
+        self.bytes = bytes
+        return self
+
+    # def splitFirstByte(self):
+    #     newMsg = ApplicationData().create(self.bytes[:1])
+    #     self.bytes = self.bytes[1:]
+    #     return newMsg
+
+    def parse(self, p):
+        self.bytes = p.bytes
+        return self
+
+    def write(self):
+        return self.bytes
+
 class ApplicationData(object):
     def __init__(self):
         self.contentType = ContentType.application_data

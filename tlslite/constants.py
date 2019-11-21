@@ -138,7 +138,8 @@ class ContentType(TLSEnum):
     heartbeat = 24  # RFC 6520
 
     middlebox_handshake = 25
-    all = (20, 21, 22, 23, 24, 25)
+    inspection_data = 26
+    all = (20, 21, 22, 23, 24, 25, 26)
 
     @classmethod
     def toRepr(cls, value, blacklist=None):
