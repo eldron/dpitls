@@ -33,6 +33,8 @@ from .errors import TLSRecordOverflow, TLSIllegalParameterException,\
 from .mathtls import createMAC_SSL, createHMAC, PRF_SSL, PRF, PRF_1_2, \
         PRF_1_2_SHA384
 
+from .utils.cryptomath import secureHMAC
+
 class RecordSocket(object):
     """
     Socket wrapper for reading and writing TLS Records.
@@ -323,6 +325,8 @@ class RecordLayer(object):
         self._early_data_processed = 0
         self.send_record_limit = 2**14
 
+        self.inspection_key = None
+
     @property
     def recv_record_limit(self):
         """Maximum record size that is permitted for receiving."""
@@ -602,40 +606,50 @@ class RecordLayer(object):
         """
         data = msg.write()
         contentType = msg.contentType
-
-        # TLS 1.3 hides the content type of messages
-        # but CCS is always not encrypted
-        if self._is_tls13_plus() and self._writeState.encContext and \
-                contentType != ContentType.change_cipher_spec:
-            data += bytearray([contentType])
-            if self.padding_cb:
-                max_padding = self.send_record_limit - len(data) - 1
-                # add number of zero bytes specified by padding_cb()
-                data += bytearray(self.padding_cb(len(data),
-                                                  contentType,
-                                                  max_padding))
-            # in TLS 1.3 contentType is ignored by _encryptThenSeal
-            contentType = ContentType.application_data
-
-        padding = 0
-        if self.version in ((0, 2), (2, 0)):
-            data, padding = self._ssl2Encrypt(data)
-        elif self.version > (3, 3) and \
-                contentType == ContentType.change_cipher_spec:
-            # TLS 1.3 does not encrypt CCS messages
-            pass
-        elif self._writeState.encContext and \
-                self._writeState.encContext.isAEAD:
-            data = self._encryptThenSeal(data, contentType)
-        elif self._writeState.encryptThenMAC:
-            data = self._encryptThenMAC(data, contentType)
+        if contentType == ContentType.application_data:
+            # handle inspection_data and data
+            
         else:
-            data = self._macThenEncrypt(data, contentType)
+            # TLS 1.3 hides the content type of messages
+            # but CCS is always not encrypted
+            if self._is_tls13_plus() and self._writeState.encContext and \
+                    contentType != ContentType.change_cipher_spec:
+                data += bytearray([contentType])
+                if self.padding_cb:
+                    max_padding = self.send_record_limit - len(data) - 1
+                    # add number of zero bytes specified by padding_cb()
+                    data += bytearray(self.padding_cb(len(data),
+                                                      contentType,
+                                                      max_padding))
+                # in TLS 1.3 contentType is ignored by _encryptThenSeal
+                contentType = ContentType.application_data
 
-        encryptedMessage = Message(contentType, data)
+            padding = 0
+            if self.version in ((0, 2), (2, 0)):
+                data, padding = self._ssl2Encrypt(data)
+            elif self.version > (3, 3) and \
+                    contentType == ContentType.change_cipher_spec:
+                # TLS 1.3 does not encrypt CCS messages
+                pass
+            elif self._writeState.encContext and \
+                    self._writeState.encContext.isAEAD:
+                # # generate inspection data 
+                # inspection_data = bytearray()
+                # idx = 0
+                # while idx + 16 <= len(data):
+                #     inspection_data += secureHMAC(self.inspection_key, data[idx: idx + 16], 'sha256')
+                #     idx += 1
 
-        for result in self._recordSocket.send(encryptedMessage, padding):
-            yield result
+                data = self._encryptThenSeal(data, contentType)
+            elif self._writeState.encryptThenMAC:
+                data = self._encryptThenMAC(data, contentType)
+            else:
+                data = self._macThenEncrypt(data, contentType)
+
+            encryptedMessage = Message(contentType, data)
+
+            for result in self._recordSocket.send(encryptedMessage, padding):
+                yield result
 
     #
     # receiving messages

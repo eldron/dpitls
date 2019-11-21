@@ -660,6 +660,10 @@ class TLSRecordLayer(object):
 
         buf = msg.write()
         contentType = msg.contentType
+        if contentType == ContentType.applicationData and len(buf) > self.recordSize:
+            print 'application data too long'
+            raise AssertionError()
+            
         #Update handshake hashes
         if update_hashes and contentType == ContentType.handshake:
             self._handshake_hash.update(buf)

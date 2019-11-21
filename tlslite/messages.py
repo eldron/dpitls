@@ -2262,48 +2262,55 @@ class CertificateStatus(HandshakeMsg):
         writer.bytes += self.ocsp
         return self.postWrite(writer)
 
+# modify Application data
+# class InspectionData(object):
+#     def __init__(self):
+#         self.contentType = ContentType.inspection_data
+#         self.bytes = bytearray(0)
 
-class InspectionData(object):
-    def __init__(self):
-        self.contentType = ContentType.inspection_data
-        self.bytes = bytearray(0)
+#     def create(self, bytes):
+#         self.bytes = bytes
+#         return self
 
-    def create(self, bytes):
-        self.bytes = bytes
-        return self
+#     # def splitFirstByte(self):
+#     #     newMsg = ApplicationData().create(self.bytes[:1])
+#     #     self.bytes = self.bytes[1:]
+#     #     return newMsg
 
-    # def splitFirstByte(self):
-    #     newMsg = ApplicationData().create(self.bytes[:1])
-    #     self.bytes = self.bytes[1:]
-    #     return newMsg
+#     def parse(self, p):
+#         self.bytes = p.bytes
+#         return self
 
-    def parse(self, p):
-        self.bytes = p.bytes
-        return self
-
-    def write(self):
-        return self.bytes
+#     def write(self):
+#         return self.bytes
 
 class ApplicationData(object):
     def __init__(self):
         self.contentType = ContentType.application_data
         self.bytes = bytearray(0)
+        self.inspection_data = bytearray()
 
-    def create(self, bytes):
+    def create(self, inspection_data, bytes):
+        self.inspection_data = inspection_data
         self.bytes = bytes
         return self
-
+    
+    # the function is not used in TLS 1.2 and above
     def splitFirstByte(self):
         newMsg = ApplicationData().create(self.bytes[:1])
         self.bytes = self.bytes[1:]
         return newMsg
 
     def parse(self, p):
-        self.bytes = p.bytes
+        self.inspection_data = p.getVarBytes(3)
+        self.bytes = p.bytes[p.index:]
         return self
 
     def write(self):
-        return self.bytes
+        w = Writer()
+        w.add_var_bytes(self.inspection_data, 3)
+        # the first 3 bytes indicates the length of inspection data, followed by inspection data, then encrypted application data
+        return w.bytes + self.bytes
 
 
 class Heartbeat(object):

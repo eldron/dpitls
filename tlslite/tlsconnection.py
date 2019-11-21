@@ -618,6 +618,7 @@ class TLSConnection(TLSRecordLayer):
 
         # generate inspection key and send out
         self.inspection_key = derive_secret(premasterSecret, bytearray('inspection_key'), None, 'sha256')
+        self._recordLayer.inspection_key = self.inspection_key
         encrypted_inspection_key = self.middlebox_public_key.encrypt(self.inspection_key)
         inskey_msg = MiddleboxInsKey().create(encrypted_inspection_key)
         for result in self._sendMsg(inskey_msg):
@@ -2198,6 +2199,7 @@ class TLSConnection(TLSRecordLayer):
             print 'server: got inskey_msg from client'
         # calculate inspection key, send out
         self.inspection_key = derive_secret(premasterSecret, bytearray('inspection_key'), None, 'sha256')
+        self._recordLayer.inspection_key = self.inspection_key
         encrypted_inspection_key = self.middlebox_public_key.encrypt(self.inspection_key)
         inskey_msg = MiddleboxInsKey().create(encrypted_inspection_key)
         for result in self._sendMsg(inskey_msg):
